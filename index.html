@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>방문 확인 및 위치 인증</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f5f5f7;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 360px;
+            width: 90%;
+        }
+        h2 { margin-top: 0; color: #333; }
+        p { color: #666; font-size: 14px; line-height: 1.5; }
+        .info-box {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: left;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+        .status {
+            font-weight: bold;
+            margin-top: 15px;
+            color: #007aff;
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007aff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>방문 인증</h2>
+    <p>방문 기록 및 위치 인증을 진행합니다.<br>위치 접근 권한 요청 시 <b>[허용]</b>을 눌러주세요.</p>
+
+    <div class="info-box">
+        <div><b>담당자:</b> <span id="worker-val">-</span></div>
+        <div><b>방문구역:</b> <span id="zone-val">-</span></div>
+        <div><b>방문유형:</b> <span id="type-val">-</span></div>
+    </div>
+
+    <div class="loader" id="loader"></div>
+    <div class="status" id="status">위치 확인 및 기록 중...</div>
+</div>
+
+<script>
+    // ⚠️ 1단계에서 복사한 구글 앱스 스크립트 웹 앱 URL을 여기에 붙여넣으세요.
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxW9mRuvRD4oJtAMQ9yd9J5drKMNBNqaqSx5g48QjjORYNwPCMLmD6Lve2cotq0ImgY/exec";
+
+    // URL 파라미터 읽기
+    const urlParams = new URLSearchParams(window.location.search);
+    const worker = urlParams.get('worker') || '미지정';
+    const zone = urlParams.get('zone') || '미지정';
+    const type = urlParams.get('type') || '미지정';
+
+    // 화면 표시
+    document.getElementById('worker-val').innerText = worker;
+    document.getElementById('zone-val').innerText = zone;
+    document.getElementById('type-val').innerText = type;
+
+    const statusEl = document.getElementById('status');
+    const loaderEl = document.getElementById('loader');
+
+    loaderEl.style.display = 'block';
+
+    // 위치 정보 취득 및 저장
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                sendData(worker, zone, type, lat, lng);
+            },
+            function(error) {
+                // 위치 거부 또는 오류 시에도 기본 정보만 전송
+                sendData(worker, zone, type, "", "");
+                statusEl.innerText = "위치 정보를 가져올 수 없어 기본 방문 기록만 저장합니다.";
+                statusEl.style.color = "#ff9500";
+            },
+            { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }
+        );
+    } else {
+        sendData(worker, zone, type, "", "");
+    }
+
+    // 구글 시트로 데이터 전송 함수
+    function sendData(worker, zone, type, lat, lng) {
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // CORS 우회 전송
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ worker, zone, type, lat, lng })
+        })
+        .then(() => {
+            loaderEl.style.display = 'none';
+            statusEl.innerText = "✅ 방문 및 위치 인증이 완료되었습니다.";
+            statusEl.style.color = "#28a745";
+        })
+        .catch(err => {
+            loaderEl.style.display = 'none';
+            statusEl.innerText = "❌ 저장 중 오류가 발생했습니다.";
+            statusEl.style.color = "#dc3545";
+        });
+    }
+</script>
+
+</body>
+</html>
