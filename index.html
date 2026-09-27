@@ -72,7 +72,7 @@
 
 <script>
     // ⚠️ 1단계에서 복사한 구글 앱스 스크립트 웹 앱 URL을 여기에 붙여넣으세요.
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxW9mRuvRD4oJtAMQ9yd9J5drKMNBNqaqSx5g48QjjORYNwPCMLmD6Lve2cotq0ImgY/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfUZZvUdHCoDg7fM4utg9-J9OqD3b1z6Bqfa8vIX1v1YWi4vxB3lHHFDyNt372ccW5/exec";
 
     // URL 파라미터 읽기
     const urlParams = new URLSearchParams(window.location.search);
@@ -111,13 +111,12 @@
     }
 
     // 구글 시트로 데이터 전송 함수
-    function sendData(worker, zone, type, lat, lng) {
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors', // CORS 우회 전송
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ worker, zone, type, lat, lng })
-        })
+// 구글 시트로 데이터 전송 함수 (GET 방식 변경)
+function sendData(worker, zone, type, lat, lng) {
+    // URL에 파라미터를 붙여서 전송
+    const sendUrl = `${GOOGLE_SCRIPT_URL}?worker=${encodeURIComponent(worker)}&zone=${encodeURIComponent(zone)}&type=${encodeURIComponent(type)}&lat=${lat}&lng=${lng}`;
+
+    fetch(sendUrl, { mode: 'no-cors' })
         .then(() => {
             loaderEl.style.display = 'none';
             statusEl.innerText = "✅ 방문 및 위치 인증이 완료되었습니다.";
@@ -128,7 +127,8 @@
             statusEl.innerText = "❌ 저장 중 오류가 발생했습니다.";
             statusEl.style.color = "#dc3545";
         });
-    }
+}
+
 </script>
 
 </body>
